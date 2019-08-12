@@ -10,7 +10,10 @@ class UserManager(BaseUserManager):
         if not re.match(email_re, email):
             raise ValueError("Users must have an email address")
 
-        user = self.model(email=self.normalize_email(email), **extra_fields)
+        user = self.model(
+            email=self.normalize_email(email),
+            **extra_fields
+        )
         user.set_password(password)
         user.save(using=self._db)
 
@@ -28,6 +31,7 @@ class UserManager(BaseUserManager):
 
 class User(AbstractUser, PermissionsMixin):
     """Custom user model that suppors using email instead of username"""
+    username = None
     email = models.EmailField(max_length=255, unique=True)
     name = models.CharField(max_length=255)
     is_active = models.BooleanField(default=True)
@@ -36,4 +40,5 @@ class User(AbstractUser, PermissionsMixin):
 
     objects = UserManager()
 
-    USERNAME = 'email'
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = []
