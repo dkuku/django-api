@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.test import TestCase
@@ -158,3 +159,42 @@ class PrivateRecipeApiTests(TestCase):
         ingredients = recipe.ingredients.all()
         self.assertIn(ingredient1, ingredients)
         self.assertIn(ingredient2, ingredients)
+
+    def test_partial_update_recipe(self):
+        """Test update a recipe with patch"""
+
+        recipe = sample_recipe(user=self.user)
+        recipe.tags.add(sample_tag(user=self.user))
+        new_tag = sample_tag(user=self.user, name='Curry')
+
+        payload = {'title': 'Chicken tikka', 'tags': [new_tag.id]}
+
+        url = detail_url(recipe.id)
+        self.client.patch(url, payload)
+        recipe.refresh_from_db()
+
+        tags = recipe.tags.all()
+        self.assertIn(payload['title'], getattr(recipe, 'title'))
+        self.assertIn(new_tag, tags)
+
+    def test_full_update_recipe(self):
+        """Test update a recipe with patch"""
+
+        recipe = sample_recipe(user=self.user)
+        recipe.tags.add(sample_tag(user=self.user))
+
+        payload = {
+            'title': 'Chicken tikka masala',
+            'time_minutes': 15,
+            'price': 11.99,
+        }
+
+        url = detail_url(recipe.id)
+        self.client.put(url, payload)
+        recipe.refresh_from_db()
+
+        self.assertEqual(recipe.title, payload['title'])
+        self.assertEqual(recipe.time_minutes, payload['time_minutes'])
+        self.assertAlmostEqual(recipe.price, Decimal(payload['price']))
+        tags = recipe.tags.all()
+        self.assertEqual(len(tags), 0)
